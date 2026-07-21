@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>指数看板</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1d2433;
+      --muted: #667085;
+      --line: #d9dee8;
+      --up: #c62828;
+      --down: #157a4f;
+      --flat: #5f6b7a;
+      --accent: #2563eb;
+      --accent-dark: #1742a5;
+      --shadow: 0 12px 32px rgba(22, 29, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+    }
+
+    .app {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.2;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    button:hover {
+      background: var(--accent-dark);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .refresh-icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .status {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status.error {
+      color: var(--up);
+    }
+
+    .groups {
+      display: grid;
+      gap: 22px;
+    }
+
+    .group {
+      min-width: 0;
+    }
+
+    .group-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .group-title {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 760;
+    }
+
+    .group-count {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 42px;
+    }
+
+    .name {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 760;
+      overflow-wrap: anywhere;
+    }
+
+    .code {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .market {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 46px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #263c8f;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .price {
+      margin: 18px 0 8px;
+      font-variant-numeric: tabular-nums;
+      font-size: 32px;
+      line-height: 1;
+      font-weight: 780;
+    }
+
+    .change-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 28px;
+      font-variant-numeric: tabular-nums;
+      font-size: 15px;
+      font-weight: 740;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .up {
+      color: var(--up);
+    }
+
+    .down {
+      color: var(--down);
+    }
+
+    .flat {
+      color: var(--flat);
+    }
+
+    .pill.up {
+      background: var(--up);
+      color: #fff;
+    }
+
+    .pill.down {
+      background: var(--down);
+      color: #fff;
+    }
+
+    .pill.flat {
+      background: var(--flat);
+      color: #fff;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric {
+      min-width: 0;
+    }
+
+    .label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .value {
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .skeleton .price,
+    .skeleton .change-row,
+    .skeleton .value {
+      color: transparent;
+      background: linear-gradient(90deg, #eceff4, #f7f8fb, #eceff4);
+      background-size: 200% 100%;
+      border-radius: 6px;
+      animation: shimmer 1.3s linear infinite;
+    }
+
+    .skeleton .price {
+      width: 70%;
+      height: 32px;
+    }
+
+    .skeleton .change-row {
+      width: 52%;
+    }
+
+    .skeleton .value {
+      width: 76%;
+      height: 18px;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: -200% 0;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100% - 20px, 1280px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        display: block;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .toolbar {
+        margin-top: 14px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .price {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div>
+        <h1>指数看板</h1>
+        <div class="meta">
+          <span>数据源：东方财富行情接口</span>
+          <span>手动刷新：点击按钮抓取一次最新数据</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button id="refreshBtn" type="button" aria-label="刷新行情">
+          <svg class="refresh-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 12a9 9 0 0 1-15.4 6.4"></path>
+            <path d="M3 12A9 9 0 0 1 18.4 5.6"></path>
+            <path d="M18 2v4h-4"></path>
+            <path d="M6 22v-4h4"></path>
+          </svg>
+          刷新
+        </button>
+      </div>
+    </section>
+
+    <div id="status" class="status">尚未刷新。</div>
+    <section id="grid" class="groups" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const indices = [
+      { name: "上证指数", secid: "1.000001", code: "000001", market: "A股" },
+      { name: "创业板指", secid: "0.399006", code: "399006", market: "A股" },
+      { name: "沪深300", secid: "1.000300", code: "000300", market: "A股" },
+      { name: "科创50", secid: "1.000688", code: "000688", market: "A股" },
+      { name: "中证A500", secid: "1.000510", code: "000510", market: "A股" },
+      { name: "中证1000", secid: "1.000852", code: "000852", market: "A股" },
+      { name: "红利指数", secid: "1.000015", code: "000015", market: "行业指数" },
+      { name: "光通信模块", secid: "90.BK1136", code: "BK1136", market: "行业指数" },
+      { name: "中证半导", secid: "2.931865", code: "931865", market: "行业指数" },
+      { name: "机器人", secid: "2.H30590", code: "H30590", market: "行业指数" },
+      { name: "卫星产业", secid: "2.931594", code: "931594", market: "行业指数" },
+      { name: "CS创新药", secid: "2.931152", code: "931152", market: "行业指数" },
+      { name: "恒生指数", secid: "100.HSI", code: "HSI", market: "港股" },
+      { name: "恒生科技指数", secid: "124.HSTECH", code: "HSTECH", market: "港股" },
+      { name: "道琼斯", secid: "100.DJIA", code: "DJIA", market: "美股" },
+      { name: "纳斯达克100", secid: "100.NDX", code: "NDX", market: "美股" },
+      { name: "标普500", secid: "100.SPX", code: "SPX", market: "美股" }
+    ];
+
+    const marketGroups = ["A股", "行业指数", "港股", "美股"];
+
+    const fields = [
+      "f12", "f13", "f14", "f2", "f3", "f4", "f5", "f6",
+      "f15", "f16", "f17", "f18", "f124", "f152"
+    ].join(",");
+
+    const grid = document.getElementById("grid");
+    const statusNode = document.getElementById("status");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    function isMissing(value) {
+      return value === undefined || value === null || value === "-" || value === "";
+    }
+
+    function num(value, digits = 2) {
+      if (isMissing(value) || Number.isNaN(Number(value))) return "--";
+      return Number(value).toLocaleString("zh-CN", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function amount(value) {
+      if (isMissing(value) || Number.isNaN(Number(value))) return "--";
+      const n = Number(value);
+      if (Math.abs(n) >= 100000000) return `${num(n / 100000000, 2)} 亿`;
+      if (Math.abs(n) >= 10000) return `${num(n / 10000, 2)} 万`;
+      return num(n, 0);
+    }
+
+    function volume(value) {
+      if (isMissing(value) || Number.isNaN(Number(value))) return "--";
+      const n = Number(value);
+      if (Math.abs(n) >= 100000000) return `${num(n / 100000000, 2)} 亿手`;
+      if (Math.abs(n) >= 10000) return `${num(n / 10000, 2)} 万手`;
+      return `${num(n, 0)} 手`;
+    }
+
+    function timeFromUnix(seconds) {
+      if (isMissing(seconds) || Number.isNaN(Number(seconds))) return "--";
+      return new Date(Number(seconds) * 1000).toLocaleString("zh-CN", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+    }
+
+    function directionClass(change) {
+      const n = Number(change);
+      if (Number.isNaN(n) || n === 0) return "flat";
+      return n > 0 ? "up" : "down";
+    }
+
+    function signed(value, digits = 2) {
+      if (isMissing(value) || Number.isNaN(Number(value))) return "--";
+      const n = Number(value);
+      const prefix = n > 0 ? "+" : "";
+      return `${prefix}${num(n, digits)}`;
+    }
+
+    function signedPercent(value) {
+      if (isMissing(value) || Number.isNaN(Number(value))) return "--";
+      return `${signed(value, 2)}%`;
+    }
+
+    function displayName(item, row) {
+      if (item.name === "纳斯达克100") return item.name;
+      return row && row.f14 ? row.f14 : item.name;
+    }
+
+    function cardTemplate(item, row) {
+      const cls = row ? directionClass(row.f4) : "flat";
+      const skeletonClass = row ? "" : " skeleton";
+      return `
+        <article class="card${skeletonClass}">
+          <div class="card-head">
+            <div>
+              <h2 class="name">${displayName(item, row)}</h2>
+              <div class="code">${item.code}</div>
+            </div>
+            <span class="market">${item.market}</span>
+          </div>
+          <div class="price ${cls}">${row ? num(row.f2, 2) : "加载中"}</div>
+          <div class="change-row ${cls}">
+            <span>${row ? signed(row.f4, 2) : "加载中"}</span>
+            <span class="pill ${cls}">${row ? signedPercent(row.f3) : "加载中"}</span>
+          </div>
+          <div class="metrics">
+            <div class="metric">
+              <div class="label">今开</div>
+              <div class="value">${row ? num(row.f17, 2) : "加载中"}</div>
+            </div>
+            <div class="metric">
+              <div class="label">最高</div>
+              <div class="value">${row ? num(row.f15, 2) : "加载中"}</div>
+            </div>
+            <div class="metric">
+              <div class="label">最低</div>
+              <div class="value">${row ? num(row.f16, 2) : "加载中"}</div>
+            </div>
+            <div class="metric">
+              <div class="label">昨收</div>
+              <div class="value">${row ? num(row.f18, 2) : "加载中"}</div>
+            </div>
+            <div class="metric">
+              <div class="label">成交量</div>
+              <div class="value" title="${row ? volume(row.f5) : ""}">${row ? volume(row.f5) : "加载中"}</div>
+            </div>
+            <div class="metric">
+              <div class="label">成交额</div>
+              <div class="value" title="${row ? amount(row.f6) : ""}">${row ? amount(row.f6) : "加载中"}</div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function render(rows = []) {
+      const rowMap = new Map(rows.map((row) => [`${row.f13}.${row.f12}`, row]));
+      grid.innerHTML = marketGroups.map((market) => {
+        const groupItems = indices.filter((item) => item.market === market);
+        return `
+          <section class="group" aria-label="${market}">
+            <div class="group-head">
+              <h2 class="group-title">${market}</h2>
+              <span class="group-count">${groupItems.length} 个指数</span>
+            </div>
+            <div class="grid">
+              ${groupItems.map((item) => cardTemplate(item, rowMap.get(item.secid))).join("")}
+            </div>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function setStatus(message, isError = false) {
+      statusNode.textContent = message;
+      statusNode.classList.toggle("error", isError);
+    }
+
+    function jsonp(url, timeoutMs = 12000) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `emQuote_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const script = document.createElement("script");
+        const timer = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("请求超时"));
+        }, timeoutMs);
+
+        function cleanup() {
+          window.clearTimeout(timer);
+          delete window[callbackName];
+          script.remove();
+        }
+
+        window[callbackName] = (payload) => {
+          cleanup();
+          resolve(payload);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("网络请求失败"));
+        };
+
+        const separator = url.includes("?") ? "&" : "?";
+        script.src = `${url}${separator}cb=${callbackName}&_=${Date.now()}`;
+        document.body.appendChild(script);
+      });
+    }
+
+    async function refresh() {
+      refreshBtn.disabled = true;
+      render();
+      setStatus("正在向东方财富抓取最新行情...");
+
+      const secids = indices.map((item) => item.secid).join(",");
+      const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=${fields}&secids=${encodeURIComponent(secids)}`;
+
+      try {
+        const payload = await jsonp(url);
+        const rows = payload && payload.data && Array.isArray(payload.data.diff) ? payload.data.diff : [];
+        render(rows);
+
+        if (rows.length !== indices.length) {
+          setStatus(`已刷新 ${rows.length}/${indices.length} 个指数，部分指数暂未返回数据。`);
+          return;
+        }
+
+        const latest = rows.reduce((max, row) => Math.max(max, Number(row.f124) || 0), 0);
+        setStatus(`已刷新：${timeFromUnix(latest)}。页面时间：${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`);
+      } catch (error) {
+        render([]);
+        setStatus(`刷新失败：${error.message}。请检查网络后重试。`, true);
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
+    refreshBtn.addEventListener("click", refresh);
+    refresh();
+  </script>
+</body>
+</html>
