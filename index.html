@@ -395,10 +395,12 @@
       { name: "恒生科技指数", secid: "124.HSTECH", code: "HSTECH", market: "港股" },
       { name: "道琼斯", secid: "100.DJIA", code: "DJIA", market: "美股" },
       { name: "纳斯达克100", secid: "100.NDX", code: "NDX", market: "美股" },
-      { name: "标普500", secid: "100.SPX", code: "SPX", market: "美股" }
+      { name: "标普500", secid: "100.SPX", code: "SPX", market: "美股" },
+      { name: "日经225", secid: "100.N225", code: "N225", market: "日韩" },
+      { name: "首尔综合指数", secid: "100.KS11", code: "KOSPI", market: "日韩" }
     ];
 
-    const marketGroups = ["A股", "行业指数", "港股", "美股"];
+    const marketGroups = ["A股", "行业指数", "港股", "美股", "日韩"];
 
     const fields = [
       "f12", "f13", "f14", "f2", "f3", "f4", "f5", "f6",
@@ -469,6 +471,7 @@
 
     function displayName(item, row) {
       if (item.name === "纳斯达克100") return item.name;
+      if (item.market === "日韩") return item.name;
       return row && row.f14 ? row.f14 : item.name;
     }
 
